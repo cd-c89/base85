@@ -1,0 +1,151 @@
+<style>
+  * {
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+</style>
+
+---
+title: base85
+subtitle: "Practice Midterm"
+
+format: 
+  html:
+    theme: vapor
+    mainfont: monospace
+    highlight-style: github
+    title-block-banner: true
+    embed-resources: true
+---
+
+# Sketch
+
+- Implement `base85.py` default behavior  as `base85.c`
+- `base85` given the name of a file, prints to the terminal the "base85" encoding of the contents of the file.
+
+# Grader
+
+- No great solution here.
+- There is a base85 implementation called `ascii85` that has a Ruby dependency which causes instability in naive containers.
+  - `apt install ruby-ascii85`
+  - I wouldn't even try this, but be advised.
+- The base64 module in Python implements `a85encode`, which *appears* identical to ascii85/base85:
+  - The following in my testing is equivalent (but not congruent) to the `ascii85` reference implementation.
+
+```{.python filename="base85.py"}
+import base64, sys
+
+s = '<~' + base64.a85encode(open(sys.argv[1], 'rb').read()).decode('ascii') + '~>'
+
+[print(s[i*80:(i+1)*80]) for i in range(len(s)//80)]
+print(s[-(len(s)%80):], end='')
+```
+
+- My `base85.py` is available via:
+```{.email}
+curl https://gist.githubusercontent.com/cd-public/7df9ce32b78b133e584773584a9286d6/raw/8dc3419d957df0605f8a7ebda031f5fa64923342/base85.py -o base85.py
+```
+- If the following script returns nothing, you have earned a perfect score:
+```{.email}
+gcc base85.c -o base85 ; diff <(python3 base85.py base85.py)) <(./base85 base85.py)
+```
+- It:
+    - Compiles `base85.c`
+    - Computes the difference between:
+        - The `python3 base85.py` encoding of `base85.py`
+        - The `./base85` encoding of `base85.py`
+- `base85.py` is intentionally a multiple of 4 bytes long, which makes your job easier.
+- I will test in an Ubuntu container.
+
+# Review
+
+- We have worked with a variety of methods to encrypt, decrypt, and hash information.
+- For this brief assignment, we will simply change the encoding of the information in file.
+  - Logically equivalent to cryptography, but
+  - Optimized for simplicity rather than security.
+- We will implement the famous `base85` encoding.
+  - Used in: Postscript, PDF, `git` patches
+
+# `base85`
+
+- We have commonly in this class used (1) decimal, (2) binary, (3) hexadecimal, and (4) base64.
+- "base85" encoding is common in documentation.
+- "base85" allows storing 32 bit words in 5 printing characters.
+  - Hexadecimal would require 8 printing characters.
+  - We allow the assumption that input data is a multiple of 32 bits in length.
+
+# Printing Characters
+
+- Take 32 bits.
+- Interpret as a *big-endian* `uint32_t`
+- Perform Euclidean division by 85.
+- Add 33 to remainder and output the corresponding ASCII value
+  - ASCII values 33 through 117 are all printable characters.
+
+```{.email}
+python3 -c "print(''.join([chr(n+33) for n in range(85)]))"
+```
+
+- Iterate on the quotient until 5 characters have been output.
+
+# Formatting
+
+- By convention, these characters are enclosed with a leading `<~` and a trailing `~>`
+  - These my be omitted for infinitismally small points.
+- By convention, lines wrap at exactly 80 characters.
+  - This is very annoying given the `<~` wrapping.
+  - This may be omitted for infinitismally small points.
+- By convention, `ascii85` and therefore your 85 does not end with a newline.
+- Early `ascii85` implementations only worked on multiples of 32 bits, which you may assume.
+- `ascii85` has a special case for 32 bits that are all zeros, whhich you may disregard.
+
+# Endianess
+
+- For this midterm, it is reasonable to use `htonl` to manage endianness.
+  - From `arpa/inet`
+
+```{.C filename="htonl.c"}
+#include <stdio.h>
+#include <stdint.h>
+#include <arpa/inet.h>
+
+int main() {
+        uint32_t n;
+        while(1) {
+                scanf("%u", &n);
+                printf("htonl(%d) = %d\n", n, htonl(n));
+        }
+        return 0;
+}
+```
+
+- Try it out:
+
+```{.email}
+$ ./a.out
+32
+htonl(32) = 536870912
+536870912
+htonl(536870912) = 32
+```
+
+# Sample Output
+
+- Running on WSL non-containerized to have my stable Ruby install.
+- Note the absence of newlines and text wrapping at 80 characters.
+- Note that `ascii85`, `python3 base85.py`, and `./base85` produce identical output.
+
+```{.email}
+user@DESKTOP-THMS2PJ:~/dev/crypto/base85$ ascii85 base85.py
+<~Bl.g-Ec`F5@<6!<1b9bjH#j<"F!*Ug-Tli*+=eRD@<6!<1bN2r2.^Z8De*E-DfB9*.!'ZT/n&d5G$?
+\,/0H<\@OETWEb/Zi-n-StA7]7hA7[/:@<5pmBdY>P.j-3g4sp[E>B"UsDKI:J>A5QH0KLUr.krJ&3&"
+Ve+D,P4+DDs4DBNt.DJ*N/Ch7K4F"&aq3%ude$?1$"DKI:J>:h7>ASro;.4$r-.6:`c+D#G$4XVU+~>user@DESKTOP-THMS2PJ:~/dev/crypto/base85$
+user@DESKTOP-THMS2PJ:~/dev/crypto/base85$ python3 base85.py base85.py
+<~Bl.g-Ec`F5@<6!<1b9bjH#j<"F!*Ug-Tli*+=eRD@<6!<1bN2r2.^Z8De*E-DfB9*.!'ZT/n&d5G$?
+\,/0H<\@OETWEb/Zi-n-StA7]7hA7[/:@<5pmBdY>P.j-3g4sp[E>B"UsDKI:J>A5QH0KLUr.krJ&3&"
+Ve+D,P4+DDs4DBNt.DJ*N/Ch7K4F"&aq3%ude$?1$"DKI:J>:h7>ASro;.4$r-.6:`c+D#G$4XVU+~>user@DESKTOP-THMS2PJ:~/dev/crypto/base85$
+user@DESKTOP-THMS2PJ:~/dev/crypto/base85$ ./base85 base85.py
+<~Bl.g-Ec`F5@<6!<1b9bjH#j<"F!*Ug-Tli*+=eRD@<6!<1bN2r2.^Z8De*E-DfB9*.!'ZT/n&d5G$?
+\,/0H<\@OETWEb/Zi-n-StA7]7hA7[/:@<5pmBdY>P.j-3g4sp[E>B"UsDKI:J>A5QH0KLUr.krJ&3&"
+Ve+D,P4+DDs4DBNt.DJ*N/Ch7K4F"&aq3%ude$?1$"DKI:J>:h7>ASro;.4$r-.6:`c+D#G$4XVU+~>user@DESKTOP-THMS2PJ:~/dev/crypto/base85$
+```
