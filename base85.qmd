@@ -7,7 +7,7 @@
 
 ---
 title: base85
-subtitle: "Practice Midterm"
+subtitle: "Midterm Actual"
 
 format: 
   html:
@@ -91,18 +91,19 @@ python3 -c "print(''.join([chr(n+33) for n in range(85)]))"
 # Formatting
 
 - By convention, these characters are enclosed with a leading `<~` and a trailing `~>`
-  - These my be omitted for infinitismally small points.
+  - These my be omitted for infinitesimally small points.
 - By convention, lines wrap at exactly 80 characters.
   - This is very annoying given the `<~` wrapping.
-  - This may be omitted for infinitismally small points.
+  - This may be omitted for infinitesimally small points.
 - By convention, `ascii85` and therefore your 85 does not end with a newline.
 - Early `ascii85` implementations only worked on multiples of 32 bits, which you may assume.
-- `ascii85` has a special case for 32 bits that are all zeros, whhich you may disregard.
+- `ascii85` has a special case for 32 bits that are all zeros, which you may disregard.
 
 # Endianess
 
 - For this midterm, it is reasonable to use `htonl` to manage endianness.
   - From `arpa/inet`
+  - You probably wrote this for SHA256, and could also use that code.
 
 ```{.C filename="htonl.c"}
 #include <stdio.h>
