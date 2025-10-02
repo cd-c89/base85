@@ -6,7 +6,7 @@
 </style>
 
 ---
-title: base85
+title: b85_rs 
 subtitle: "Midterm Actual"
 
 format: 
@@ -20,17 +20,18 @@ format:
 
 # Sketch
 
-- Implement `base85.py` default behavior  as `base85.c`
+- Implement `base85` default behavior (no flags)
 - `base85` given the name of a file, prints to the terminal the "base85" encoding of the contents of the file.
+- `base85` linebreaks every 80 characters.
 
 # Grader
 
 - No great solution here.
-- There is a base85 implementation called `ascii85` that has a Ruby dependency which causes instability in naive containers.
+- There is a base85 implementation called `ascii85` that has a Ruby dependency but may work.
   - `apt install ruby-ascii85`
-  - I wouldn't even try this, but be advised.
+  - Don't spend too long on this.
 - The base64 module in Python implements `a85encode`, which *appears* identical to ascii85/base85:
-  - The following in my testing is equivalent (but not congruent) to the `ascii85` reference implementation.
+  - The following in my testing is equivalent to the `ascii85` reference implementation.
 
 ```{.python filename="base85.py"}
 import base64, sys
@@ -47,15 +48,13 @@ curl https://gist.githubusercontent.com/cd-public/7df9ce32b78b133e584773584a9286
 ```
 - If the following script returns nothing, you have earned a perfect score:
 ```{.email}
-gcc base85.c -o base85 ; diff <(python3 base85.py base85.py)) <(./base85 base85.py)
+diff <(python3 base85.py base85.py)) <(cargo run -- base85.py 2>/dev/null)
 ```
 - It:
-    - Compiles `base85.c`
     - Computes the difference between:
         - The `python3 base85.py` encoding of `base85.py`
-        - The `./base85` encoding of `base85.py`
+        - The your Rust encoding of `base85.py`
 - `base85.py` is intentionally a multiple of 4 bytes long, which makes your job easier.
-- I will test in an Ubuntu container.
 
 # Review
 
@@ -99,42 +98,11 @@ python3 -c "print(''.join([chr(n+33) for n in range(85)]))"
 - Early `ascii85` implementations only worked on multiples of 32 bits, which you may assume.
 - `ascii85` has a special case for 32 bits that are all zeros, which you may disregard.
 
-# Endianess
-
-- For this midterm, it is reasonable to use `htonl` to manage endianness.
-  - From `arpa/inet`
-  - You probably wrote this for SHA256, and could also use that code.
-
-```{.C filename="htonl.c"}
-#include <stdio.h>
-#include <stdint.h>
-#include <arpa/inet.h>
-
-int main() {
-        uint32_t n;
-        while(1) {
-                scanf("%u", &n);
-                printf("htonl(%d) = %d\n", n, htonl(n));
-        }
-        return 0;
-}
-```
-
-- Try it out:
-
-```{.email}
-$ ./a.out
-32
-htonl(32) = 536870912
-536870912
-htonl(536870912) = 32
-```
-
 # Sample Output
 
 - Running on WSL non-containerized to have my stable Ruby install.
 - Note the absence of newlines and text wrapping at 80 characters.
-- Note that `ascii85`, `python3 base85.py`, and `./base85` produce identical output.
+- Note that `ascii85`, `python3 base85.py`, and `cargo run -- base85.py 2>/dev/null` produce identical output.
 
 ```{.email}
 user@DESKTOP-THMS2PJ:~/dev/crypto/base85$ ascii85 base85.py
@@ -145,7 +113,7 @@ user@DESKTOP-THMS2PJ:~/dev/crypto/base85$ python3 base85.py base85.py
 <~Bl.g-Ec`F5@<6!<1b9bjH#j<"F!*Ug-Tli*+=eRD@<6!<1bN2r2.^Z8De*E-DfB9*.!'ZT/n&d5G$?
 \,/0H<\@OETWEb/Zi-n-StA7]7hA7[/:@<5pmBdY>P.j-3g4sp[E>B"UsDKI:J>A5QH0KLUr.krJ&3&"
 Ve+D,P4+DDs4DBNt.DJ*N/Ch7K4F"&aq3%ude$?1$"DKI:J>:h7>ASro;.4$r-.6:`c+D#G$4XVU+~>user@DESKTOP-THMS2PJ:~/dev/crypto/base85$
-user@DESKTOP-THMS2PJ:~/dev/crypto/base85$ ./base85 base85.py
+user@DESKTOP-THMS2PJ:~/dev/crypto/base85$ cargo run -- base85.py 2>/dev/null
 <~Bl.g-Ec`F5@<6!<1b9bjH#j<"F!*Ug-Tli*+=eRD@<6!<1bN2r2.^Z8De*E-DfB9*.!'ZT/n&d5G$?
 \,/0H<\@OETWEb/Zi-n-StA7]7hA7[/:@<5pmBdY>P.j-3g4sp[E>B"UsDKI:J>A5QH0KLUr.krJ&3&"
 Ve+D,P4+DDs4DBNt.DJ*N/Ch7K4F"&aq3%ude$?1$"DKI:J>:h7>ASro;.4$r-.6:`c+D#G$4XVU+~>user@DESKTOP-THMS2PJ:~/dev/crypto/base85$
